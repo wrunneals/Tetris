@@ -107,6 +107,7 @@ class Container:
 					# Writting a block piece off the gameboard ends the game
 					print("Game Over")
 					self.game.board = [[0] * self.game.grid_y for i in range(self.game.grid_x)]
+					self.game.board.score = 0
 					self.x = 0
 					self.y = self.startY
 					return
