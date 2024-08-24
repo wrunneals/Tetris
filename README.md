@@ -1,2 +1,2 @@
 # Tetris
- Tetris game writen with pygame.
+ Tetris game writen with pygame. Still has some bugs...
