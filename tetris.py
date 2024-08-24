@@ -12,36 +12,45 @@ class Container:
 			[0, 1, 0],
 			[0, 0, 0]]
 
-		I = [[0, 2, 0, 0],
-			[0, 2, 0, 0],
-			[0, 2, 0, 0],
-			[0, 2, 0, 0]]
+		I = [[0, 1, 0, 0],
+			[0, 1, 0, 0],
+			[0, 1, 0, 0],
+			[0, 1, 0, 0]]
 
-		O = [[3, 3],
-			[3, 3]]
+		O = [[1, 1],
+			[1, 1]]
 
-		L = [[4, 0, 0],
-			[4, 0, 0],
-			[4, 4, 0]]
+		L = [[1, 0, 0],
+			[1, 0, 0],
+			[1, 1, 0]]
 
-		J = [[0, 0, 5],
-			[0, 0, 5],
-			[0, 5, 5]]
+		J = [[0, 0, 1],
+			[0, 0, 1],
+			[0, 1, 1]]
+
+		LZ = [[0, 0, 0],
+			[1, 1, 0],
+			[0, 1, 1]]
+
+		RZ = [[0, 0, 0],
+			[0, 1, 1],
+			[1, 1, 0]]
 
 		# super mean blocks
-		X = [[0, 6, 0],
-			[6, 6, 6],
-		 	[0, 6, 0]]
+		#X = [[0, 1, 0],
+		#	[1, 1, 1],
+		#	[0, 1, 0]]
 
-		BIG_O = [[7, 7, 7],
-				[7, 0, 7],
-				[7, 7, 7]]
+		#BIG_O = [[1, 1, 1],
+		#		[1, 0, 1],
+		#		[1, 1, 1]]
 
-		CORNERS = [[8, 0, 8],
-				[0, 0, 0],
-				[8, 0, 8]]
+		#CORNERS = [[1, 0, 1],
+		#		[0, 0, 0],
+		#		[1, 0, 1]]
 
 	def __init__(self, game):
+		self.createBlockColors()
 		self.startY = -96
 		self.startX = 128
 		self.x = self.startX
@@ -70,6 +79,18 @@ class Container:
 						#Hitting block below
 						return True
 		return False
+
+	# Randomizes block colors each play for no real reason besides it looks nice
+	def createBlockColors(self):
+		colors = [i for i in range(1, 13)]
+		random.shuffle(colors)
+		i = 0
+		for block in self.Blocks:
+			for x in range(len(block.value)):
+				for y in range(len(block.value[0])):
+					if block.value[x][y] != 0:
+						block.value[x][y] = colors[i]
+			i += 1
 
 	# Transposes container array, can go both clockwise or counter with bool param
 	def rotate(self, anti=False):
@@ -107,7 +128,7 @@ class Container:
 					# Writting a block piece off the gameboard ends the game
 					print("Game Over")
 					self.game.board = [[0] * self.game.grid_y for i in range(self.game.grid_x)]
-					self.game.board.score = 0
+					self.game.score = 0
 					self.x = 0
 					self.y = self.startY
 					return
@@ -131,7 +152,7 @@ class Tetris:
 		self.board = [[0] * self.grid_y for i in range(self.grid_x)]
 		self.background = (80, 80, 100)
 		self.ui_background = (127, 127, 150)
-		self.big_font = pygame.font.SysFont("Times New Roman", 40)
+		self.big_font = pygame.font.SysFont("Times New Roman", 45)
 		self.small_font = pygame.font.SysFont("Times New Roman", 22)
 
 	# Checks for and collapses completed rows on the gameboard
@@ -178,6 +199,14 @@ class Tetris:
 						color = (225, 225, 20)
 					case 8:
 						color = (225, 20, 100)
+					case 9:
+						color = (100, 225, 20)
+					case 10:
+						color = (20, 225, 100)
+					case 11:
+						color = (20, 100, 225)
+					case 12:
+						color = (100, 20, 225)
 
 				pygame.draw.rect(display, color, pygame.Rect(offset_x + x * size_x, offset_y + y * size_y, size_x, size_y))
 				pygame.draw.rect(display, (0, 0, 0), pygame.Rect(offset_x + x * size_x, offset_y + y * size_y, size_x, size_y), 2)
@@ -192,7 +221,7 @@ class Tetris:
 		# Title text
 		title_text = self.big_font.render("Tetris", True, "white")
 		title_rect = title_text.get_rect()
-		title_rect.center = (self.res_x + self.ui_x / 2, 20)
+		title_rect.center = (self.res_x + self.ui_x / 2, 30)
 		display.blit(title_text, title_rect)
 
 		# Next block text
@@ -202,9 +231,9 @@ class Tetris:
 		display.blit(next_text, next_rect)
 
 		# Score and level text
-		score_text = self.small_font.render("Score: %s      Level: %s" % (self.score, int(self.score / 100 + 1) ), True, "white")
+		score_text = self.small_font.render("Score: %s    Level: %s" % (self.score, int(self.score / 100 + 1) ), True, "white")
 		score_rect = score_text.get_rect()
-		score_rect.center = (self.res_x + 110, 300)
+		score_rect.center = (self.res_x + 120, 300)
 		display.blit(score_text, score_rect)
 
 	# Main drawing wrapper function for redrawing the game every frame
@@ -225,6 +254,10 @@ def main():
 	clock = pygame.time.Clock()
 	player = Container(game)
 	frames_count = 0
+
+	down_pressed = False
+	down_delay_count = 0
+
 	while True:
 		for event in pygame.event.get():
 			if event.type == QUIT:
@@ -238,17 +271,29 @@ def main():
 					if not player.checkCollisionPoint(player.x + game.grid_size_x, player.y):
 						player.x += game.grid_size_x
 				if event.key == pygame.K_DOWN:
-					if not player.checkCollisionPoint(player.x, player.y + game.grid_size_y):
+					if not player.checkCollisionPoint(player.x, player.y + game.grid_size_y) and not down_pressed:
 						player.y += game.grid_size_y
+					down_pressed = True
 				if event.key == pygame.K_UP:
 					player.rotate()
 					if player.checkCollisionPoint(player.x, player.y):
 						player.rotate(True)
+			if event.type == pygame.KEYUP:
+				if event.key == pygame.K_DOWN:
+					down_pressed = False
+					down_delay_count = 0
+
 		game.redraw(display, player)
 		if frames_count / game.frames_per_tick == 1:
 			player.update()
 			game.checkRows()
 			frames_count = 0
+		elif down_pressed:
+			if down_delay_count > 30:
+				if not player.checkCollisionPoint(player.x, player.y + game.grid_size_y):
+					player.y += game.grid_size_y
+			else:
+				down_delay_count += 1
 		pygame.display.update()
 		frames_count += 1
 		clock.tick(game.fps)
